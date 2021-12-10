@@ -65,7 +65,14 @@ typedef struct{
  *
  * Devuelve el simulador creado o NULL en caso de error.
  */
-simulador_t* simulador_crear(hospital_t* hospital);
+simulador_t* simulador_crear(hospital_t* hospital){
+    if(hospital){
+        simulador_t* nuevo = calloc(1, sizeof(simulador_t));
+        if(!nuevo) return NULL;
+
+        
+    }
+}
 
 /**
  * Simula un evento. Cada evento puede recibir un puntero a un dato que depende
