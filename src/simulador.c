@@ -3,7 +3,11 @@
 
 #include "hospital.h"
 
-typedef struct _simulador_t simulador_t;
+typedef struct _simulador_t {
+    hospital_t* hospital;
+    int entrenadores_atendidos;
+    
+} simulador_t;
 
 typedef enum {
     ObtenerEstadisticas,
@@ -70,8 +74,11 @@ simulador_t* simulador_crear(hospital_t* hospital){
         simulador_t* nuevo = calloc(1, sizeof(simulador_t));
         if(!nuevo) return NULL;
 
-        
+        nuevo->hospital = hospital;
+
+        return nuevo;        
     }
+    return NULL;
 }
 
 /**
@@ -86,11 +93,58 @@ simulador_t* simulador_crear(hospital_t* hospital){
  *
  * Devuelve ExitoSimulacion o ErrorSimulacion según corresponda a cada evento.
  */
-ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimulacion evento, void* datos);
+ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimulacion evento, void* datos){
+    if(simulador){
+        switch(evento){
+            case ObtenerEstadisticas:
+                if(!datos) break;
+                EstadisticasSimulacion* estadisticas = datos;
+                return ExitoSimulacion;
+
+            case AtenderProximoEntrenador:
+                return ExitoSimulacion;
+
+            case ObtenerInformacionPokemonEnTratamiento:
+                if(!datos) break;
+
+                return ExitoSimulacion;
+
+            case AdivinarNivelPokemon: 
+                if(!datos) break;
+                Intento* intento = datos;
+
+                return ExitoSimulacion;
+
+            case AgregarDificultad:
+                if(!datos) break;
+                DatosDificultad* dificultad_dato = datos;
+
+                return ExitoSimulacion;
+
+            case SeleccionarDificultad:
+                if(!datos) break;
+                return ExitoSimulacion;
+
+            case ObtenerInformacionDificultad:
+                return ExitoSimulacion;
+
+            case FinalizarSimulacion:
+                return ExitoSimulacion;
+
+            default: break;
+        }
+    }
+    return ErrorSimulacion;
+}
 
 /**
  * Destruye el simulador y libera la memoria asociada (incluida la del hospital).
  */
-void simulador_destruir(simulador_t* simulador);
+void simulador_destruir(simulador_t* simulador){
+    if(simulador){
+        hospital_destruir(simulador->hospital);
+        free(simulador);
+    }
+}
 
 #endif // SIMULADOR_H_
