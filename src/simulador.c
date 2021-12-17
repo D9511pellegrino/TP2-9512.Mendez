@@ -6,6 +6,9 @@
 typedef struct _simulador_t {
     hospital_t* hospital;
     int entrenadores_atendidos;
+
+
+    bool simulacion_finalizada;
     
 } simulador_t;
 
@@ -76,6 +79,8 @@ simulador_t* simulador_crear(hospital_t* hospital){
 
         nuevo->hospital = hospital;
 
+        nuevo->simulacion_finalizada = false;
+
         return nuevo;        
     }
     return NULL;
@@ -94,7 +99,7 @@ simulador_t* simulador_crear(hospital_t* hospital){
  * Devuelve ExitoSimulacion o ErrorSimulacion según corresponda a cada evento.
  */
 ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimulacion evento, void* datos){
-    if(simulador){
+    if(simulador && !simulacion_finalizada){
         switch(evento){
             case ObtenerEstadisticas:
                 if(!datos) break;
@@ -123,12 +128,18 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
 
             case SeleccionarDificultad:
                 if(!datos) break;
+                int* id_dificultad = datos;
+
                 return ExitoSimulacion;
 
             case ObtenerInformacionDificultad:
+                if(!datos) break;
+                InformacionDificultad* informacion = datos;
+
                 return ExitoSimulacion;
 
             case FinalizarSimulacion:
+                nuevo->simulacion_finalizada = true;
                 return ExitoSimulacion;
 
             default: break;
