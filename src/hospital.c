@@ -1,17 +1,10 @@
 #include "hospital.h"
+#include "hospital_estructuras.h"
+
 #include "split.h"
+#include "lista.h"
+#include "hospital_estructuras.h"
 
-
-struct _hospital_pkm_t{
-    size_t cantidad_entrenador;
-    size_t cantidad_pokemon;
-    pokemon_t* vector_pokemones;
-};
-
-struct _pkm_t{
-    char* nombre;
-    size_t nivel;
-};
 
 hospital_t* hospital_crear(){
     hospital_t* hospital_nuevo = calloc(1, sizeof(hospital_t));
@@ -20,8 +13,8 @@ hospital_t* hospital_crear(){
     hospital_nuevo->cantidad_entrenador = 0;
     hospital_nuevo->cantidad_pokemon = 0;
 
-    hospital_nuevo->vector_pokemones = calloc(1, sizeof(pokemon_t*));
-    if(!(hospital_nuevo->vector_pokemones)){
+    hospital_nuevo->pokemones = lista_crear();
+    if(!(hospital_nuevo->pokemones)){
         free(hospital_nuevo);
         return NULL;
     } 
@@ -65,35 +58,64 @@ char* leer_linea(FILE* file){
 void agregar_linea_hospital(hospital_t* hospital, char** vector_linea){
     if(!hospital || !vector_linea) return;
 
-    pokemon_t* aux_pokemon = NULL;
+    pokemon_t* aux_pokemon = calloc(1, sizeof(pokemon_t));
+    if(!aux_pokemon) return;
+
+    entrenador_t* nuevo_entrenador = calloc(1, sizeof(entrenador_t));
+    if(!nuevo_entrenador){
+        free(aux_pokemon);
+        return;
+    }
+
+    nuevo_entrenador->id = (size_t) atoi(vector_linea[0]);
+    size_t long_nombre = strlen(vector_linea[1]);
+    nuevo_entrenador->nombre = calloc(1, long_nombre+1);
+    strcpy(nuevo_entrenador->nombre, vector_linea[1]);
+
+    size_t posicion = 0;
+    size_t j = 0;
     
     for (size_t i = 2; vector_linea[i] ; i++){
 
-        aux_pokemon = realloc(hospital->vector_pokemones, (hospital->cantidad_pokemon+i-1) * sizeof(pokemon_t));
-        hospital->vector_pokemones = aux_pokemon;
-        if(!hospital->vector_pokemones){
-            free((hospital->vector_pokemones)[hospital->cantidad_pokemon].nombre);
+        aux_pokemon = realloc(aux_pokemon, (hospital->cantidad_pokemon+i-1) * sizeof(pokemon_t));
+        if(!aux_pokemon){
+            free(nuevo_entrenador->nombre);
+            free(nuevo_entrenador);
+            for(j = 0; j<(i/2); j++) free(aux_pokemon[j].nombre);
+            hospital->cantidad_pokemon-=j;
+            free(aux_pokemon);
             return;
         }
 
         if(i % 2 == 0){
-            size_t long_nombre = strlen(vector_linea[i]);
+            long_nombre = strlen(vector_linea[i]);
 
-            (hospital->vector_pokemones)[hospital->cantidad_pokemon].nombre = calloc(1, long_nombre+1);
-            if(!((hospital->vector_pokemones)[hospital->cantidad_pokemon].nombre)){
-                for(size_t j = 0; j<hospital->cantidad_pokemon; j++) free((hospital->vector_pokemones)[j].nombre);
-                free(hospital->vector_pokemones);
+            (aux_pokemon)[posicion].nombre = calloc(1, long_nombre+1);
+            if(!((aux_pokemon)[posicion].nombre)){
+                free(nuevo_entrenador->nombre);
+                free(nuevo_entrenador);
+                for(j = 0; j<(i/2); j++) free((aux_pokemon)[j].nombre);
+                hospital->cantidad_pokemon-=j;
+                free(aux_pokemon);
                 return;
             }
 
-            strcpy((hospital->vector_pokemones)[hospital->cantidad_pokemon].nombre,vector_linea[i]);
+            strcpy((aux_pokemon)[posicion].nombre,vector_linea[i]);
         }
-
         else{
-            (hospital->vector_pokemones)[hospital->cantidad_pokemon].nivel = (size_t) atoi(vector_linea[i]);
+            (aux_pokemon)[posicion].nivel = (size_t) atoi(vector_linea[i]);
+            aux_pokemon[posicion].entrenador = nuevo_entrenador;
             hospital->cantidad_pokemon++;
+            posicion++;
         }
     }
+
+    for(size_t i = 0; i<posicion; i++){
+        lista_insertar(hospital->pokemones, &aux_pokemon[i]);
+    }
+
+
+    free(aux_pokemon);
     return;
 }
 
@@ -220,3 +242,9 @@ const char* pokemon_nombre(pokemon_t* pokemon){
     if(!pokemon) return NULL;
     return pokemon->nombre;
 }
+
+entrenador_t* pokemon_entrenador(pokemon_t* pokemon){
+     if(!pokemon) return NULL;
+    return pokemon->id_entrenador;
+}
+

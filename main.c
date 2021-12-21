@@ -1,5 +1,6 @@
 #include "src/hospital.h"
 #include "src/simulador.h"
+#include "src/hospital_estructuras.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
