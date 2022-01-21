@@ -99,11 +99,11 @@ simulador_t* simulador_crear(hospital_t* hospital){
  * Devuelve ExitoSimulacion o ErrorSimulacion según corresponda a cada evento.
  */
 ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimulacion evento, void* datos){
-    if(simulador && !simulacion_finalizada){
+    if(simulador /*&& !simulacion_finalizada*/){
         switch(evento){
             case ObtenerEstadisticas:
                 if(!datos) break;
-                EstadisticasSimulacion* estadisticas = datos;
+                //EstadisticasSimulacion* estadisticas = datos;
                 return ExitoSimulacion;
 
             case AtenderProximoEntrenador:
@@ -116,30 +116,30 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
 
             case AdivinarNivelPokemon: 
                 if(!datos) break;
-                Intento* intento = datos;
+                //Intento* intento = datos;
 
                 return ExitoSimulacion;
 
             case AgregarDificultad:
                 if(!datos) break;
-                DatosDificultad* dificultad_dato = datos;
+                //DatosDificultad* dificultad_dato = datos;
 
                 return ExitoSimulacion;
 
             case SeleccionarDificultad:
                 if(!datos) break;
-                int* id_dificultad = datos;
+                //int* id_dificultad = datos;
 
                 return ExitoSimulacion;
 
             case ObtenerInformacionDificultad:
                 if(!datos) break;
-                InformacionDificultad* informacion = datos;
+                //InformacionDificultad* informacion = datos;
 
                 return ExitoSimulacion;
 
             case FinalizarSimulacion:
-                nuevo->simulacion_finalizada = true;
+                //nuevo->simulacion_finalizada = true;
                 return ExitoSimulacion;
 
             default: break;

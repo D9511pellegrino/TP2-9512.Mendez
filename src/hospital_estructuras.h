@@ -8,6 +8,7 @@ struct _hospital_pkm_t {
     size_t cantidad_entrenador;
     size_t cantidad_pokemon;
     lista_t* pokemones;
+    lista_t* pokemones_alfabetico;
 };
 
 struct _pkm_t {
