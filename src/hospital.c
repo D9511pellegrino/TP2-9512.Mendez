@@ -299,15 +299,17 @@ size_t hospital_a_cada_pokemon(hospital_t* hospital, bool (*funcion)(pokemon_t* 
 bool destructor_pokemones(void* p1, void* p2){
 
     if(p1){
-        pokemon_t* p = p1;
-
+        pokemon_t* p = NULL;
+        p = p1;
+        if(p->nombre) free(p->nombre);
         if(p->entrenador){
             entrenador_t* entrenador = p->entrenador;
+            //p->entrenador = NULL;
             free(entrenador->nombre);
             free(entrenador);
         }
-        free(p->nombre);
-        free(p);
+        
+        if(p) free(p);
     }
     return true;
 }
@@ -346,11 +348,10 @@ void hospital_destruir(hospital_t* hospital){
         free(p);
         i++;
     }*/
-
-
     lista_con_cada_elemento(hospital->pokemones, destructor_pokemones, NULL);
     
-    lista_con_cada_elemento(hospital->pokemones_alfabetico, destructor_pokemones, NULL);
+    //lista_con_cada_elemento(hospital->pokemones_alfabetico, destructor_pokemones, NULL);
+    //hospital_a_cada_pokemon(hospital, destructor_pokemones);
     lista_destruir(hospital->pokemones);
     lista_destruir(hospital->pokemones_alfabetico);
 

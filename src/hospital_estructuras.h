@@ -13,8 +13,8 @@ struct _hospital_pkm_t {
 
 struct _pkm_t {
     char* nombre;
-    size_t nivel;
     entrenador_t* entrenador;
+    size_t nivel;
 };
 
 struct _entrenador_t {

@@ -99,7 +99,7 @@ simulador_t* simulador_crear(hospital_t* hospital){
  * Devuelve ExitoSimulacion o ErrorSimulacion según corresponda a cada evento.
  */
 ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimulacion evento, void* datos){
-    if(simulador /*&& !simulacion_finalizada*/){
+    if(simulador && !(simulador->simulacion_finalizada)){
         switch(evento){
             case ObtenerEstadisticas:
                 if(!datos) break;
@@ -122,7 +122,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
 
             case AgregarDificultad:
                 if(!datos) break;
-                //DatosDificultad* dificultad_dato = datos;
+                DatosDificultad* dificultad_dato = datos;
 
                 return ExitoSimulacion;
 
@@ -139,7 +139,7 @@ ResultadoSimulacion simulador_simular_evento(simulador_t* simulador, EventoSimul
                 return ExitoSimulacion;
 
             case FinalizarSimulacion:
-                //nuevo->simulacion_finalizada = true;
+                simulador->simulacion_finalizada = true;
                 return ExitoSimulacion;
 
             default: break;
