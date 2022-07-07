@@ -20,11 +20,20 @@ hospital_t* hospital_crear(){
     } 
 
     hospital_nuevo->pokemones_alfabetico = lista_crear();
-    if(!(hospital_nuevo->pokemones)){
+    if(!(hospital_nuevo->pokemones_alfabetico)){
         lista_destruir(hospital_nuevo->pokemones);
         free(hospital_nuevo);
         return NULL;
     } 
+
+    hospital_nuevo->entrenadores = lista_crear();
+    if(!(hospital_nuevo->entrenadores)){
+        lista_destruir(hospital_nuevo->pokemones);
+        lista_destruir(hospital_nuevo->pokemones_alfabetico);
+        free(hospital_nuevo);
+        return NULL;
+    } 
+
     return hospital_nuevo;
 }
 
@@ -62,15 +71,17 @@ char* leer_linea(FILE* file){
 
 /*La funcion agregar_linea_hospital recibe el hospital en el que se va a agregar una linea
  y un doble puntero a char con los datos de pokemones a agregar en el hospital.*/
-void agregar_linea_hospital(pokemon_t** aux_pokemon, size_t* cantidad_pokemones, char** vector_linea){
-    if(!cantidad_pokemones || !vector_linea) return;
+void agregar_linea_hospital(lista_t* entrenadores, pokemon_t** aux_pokemon, size_t* cantidad_pokemones, char** vector_linea){
+    if(!cantidad_pokemones || !vector_linea || !*aux_pokemon  || !entrenadores) return;
 
-    if(!*aux_pokemon) *aux_pokemon = calloc(1, sizeof(pokemon_t));
-    if(!*aux_pokemon) return;
+    pokemon_t* auxiliar_vector = NULL;
+
+    //if(!*aux_pokemon) *aux_pokemon = calloc(1, sizeof(pokemon_t*));
+    //if(!*aux_pokemon) return;
 
     entrenador_t* nuevo_entrenador = calloc(1, sizeof(entrenador_t));
     if(!nuevo_entrenador){
-        free(aux_pokemon);
+        //free(aux_pokemon);
         return;
     }
 
@@ -79,20 +90,20 @@ void agregar_linea_hospital(pokemon_t** aux_pokemon, size_t* cantidad_pokemones,
     nuevo_entrenador->nombre = calloc(1, long_nombre+1);
     strcpy(nuevo_entrenador->nombre, vector_linea[1]);
 
+    lista_insertar(entrenadores, nuevo_entrenador);
+
     size_t j = 0;
 
-    pokemon_t* auxiliar_vector = NULL;
+    
     
     for (size_t i = 2; vector_linea[i] ; i++){
 
         auxiliar_vector = realloc(*aux_pokemon, (*cantidad_pokemones+i-1) * sizeof(pokemon_t));
         *aux_pokemon = auxiliar_vector;
         if(!*aux_pokemon){
-            free(nuevo_entrenador->nombre);
-            free(nuevo_entrenador);
-            for(j = 0; j<(i/2); j++) free((*aux_pokemon)[j].nombre);
-            *cantidad_pokemones-=j;
-            free(*aux_pokemon);
+            for(j = 0; j<*cantidad_pokemones; j++) free((*aux_pokemon)[j].nombre);
+            //*cantidad_pokemones-=j;
+            //free(*aux_pokemon);
             return;
         }
 
@@ -101,10 +112,8 @@ void agregar_linea_hospital(pokemon_t** aux_pokemon, size_t* cantidad_pokemones,
 
             (*aux_pokemon)[*cantidad_pokemones].nombre = calloc(1, long_nombre+1);
             if(!((*aux_pokemon)[*cantidad_pokemones].nombre)){
-                free(nuevo_entrenador->nombre);
-                free(nuevo_entrenador);
-                for(j = 0; j<(i/2); j++) free((*aux_pokemon)[j].nombre);
-                cantidad_pokemones-=j;
+                for(j = 0; j<*cantidad_pokemones; j++) free((*aux_pokemon)[j].nombre);
+                //cantidad_pokemones-=j;
                 free(*aux_pokemon);
                 return;
             }
@@ -114,16 +123,17 @@ void agregar_linea_hospital(pokemon_t** aux_pokemon, size_t* cantidad_pokemones,
         else{
             (*aux_pokemon)[*cantidad_pokemones].nivel = (size_t) atoi(vector_linea[i]);
             (*aux_pokemon)[*cantidad_pokemones].entrenador = nuevo_entrenador;
+            //strcpy(((*aux_pokemon)[*cantidad_pokemones].entrenador)->nombre, nuevo_entrenador->nombre);
             (*cantidad_pokemones)++;
         }
     }
 
-    //return aux_pokemon;
+    return;
 }
 
 /*La función swap recibe dos punteros a pokemon y los intercambia mediante memcpy
     Si los punteros son NULL retorna.*/
-void swap(pokemon_t* p1, pokemon_t* p2){
+void swap_pokemones(pokemon_t* p1, pokemon_t* p2){
     if(!p1 || !p2) return;
 
     pokemon_t temporal;
@@ -140,15 +150,15 @@ void swap(pokemon_t* p1, pokemon_t* p2){
     Los ordena mediante bubble alfabeticamente de la a a la z.
     Si los punteros son NULL o la cantidad de pokemon es nula retorna.*/
 void ordenar_pokemon_alfabetico(pokemon_t* p, size_t cantidad_pokemon){
-    if(!p || cantidad_pokemon <= 1) return;
+    if(!p || cantidad_pokemon == 0) return;
 
-    bool ordenado = false;
+    bool ordenado= false;
 
     while (!ordenado){
         ordenado = true;
         for (size_t i = 0; i < cantidad_pokemon-1; i++) {
             if (strcmp(p[i].nombre, p[i + 1].nombre) > 0) {
-                swap (&p[i], &p [i + 1]);
+                swap_pokemones(&p[i], &p [i + 1]);
                 ordenado = false;
             }
         }
@@ -158,37 +168,32 @@ void ordenar_pokemon_alfabetico(pokemon_t* p, size_t cantidad_pokemon){
     return;
 }
 
-void insertar_pokemon_ordenado(lista_t* lista_pokemon, pokemon_t* vector_pokemon, size_t cant_pokemon){
-    if(!lista_pokemon || !vector_pokemon || cant_pokemon<1) return;
+void ordenar_lista_pokemon(lista_t* lista_p){
+    if(!lista_p || lista_vacia(lista_p)) return;
 
-    pokemon_t* poke1_aux;
-    lista_iterador_t* iterador = lista_iterador_crear(lista_pokemon);
-    if(!iterador) return;
+    bool ordenado= false;
+    size_t cantidad_pokemon = lista_tamanio(lista_p);
 
-    size_t posicion = 0;
+    pokemon_t* p_aux1;
+    pokemon_t* p_aux2;
 
+    while (!ordenado){
+        ordenado = true;
+        for (size_t i = 0; i < cantidad_pokemon-1; i++) {
 
-    for(size_t i=0; i<cant_pokemon; i++){
+            p_aux1 = lista_elemento_en_posicion(lista_p,i);
+            p_aux2 = lista_elemento_en_posicion(lista_p,i+1);
+            
 
-        while(lista_iterador_tiene_siguiente(iterador)){
-            poke1_aux = lista_iterador_elemento_actual(iterador);
-
-            if(strcmp(poke1_aux->nombre, vector_pokemon[i].nombre) >= 0){
-                lista_insertar_en_posicion(lista_pokemon, &vector_pokemon[i], posicion);
-            }
-            else{
-                posicion++;
-                lista_iterador_avanzar(iterador);
+            if (strcmp(p_aux1->nombre, p_aux2->nombre) > 0) {
+                swap_pokemones(p_aux1, p_aux2);
+                ordenado = false;
             }
         }
+        cantidad_pokemon--;
+    } 
 
-        if(!lista_iterador_tiene_siguiente(iterador))
-            lista_insertar(lista_pokemon, &(vector_pokemon[i]));
-
-    }
-
-    lista_iterador_destruir(iterador);
-
+    return;
 }
 
 
@@ -202,7 +207,11 @@ bool hospital_leer_archivo(hospital_t* hospital, const char* nombre_archivo){
     char** vector_linea = NULL;
     size_t cantidad_lineas = 0, cantidad_pokemon = 0;
 
-    pokemon_t* aux_pokemon = NULL;
+    pokemon_t* aux_pokemon = calloc(1, sizeof(pokemon_t));
+    if(!aux_pokemon){
+        fclose(archivo_hospital);
+        return false;
+    }
 
     bool leer_archivo = true;
     while(leer_archivo){
@@ -218,7 +227,7 @@ bool hospital_leer_archivo(hospital_t* hospital, const char* nombre_archivo){
             leer_archivo = false;
         }
 
-        agregar_linea_hospital(&aux_pokemon, &cantidad_pokemon, vector_linea);
+        agregar_linea_hospital(hospital->entrenadores, &aux_pokemon, &cantidad_pokemon, vector_linea);
         if(!aux_pokemon){
             free(linea_leida);
             leer_archivo = false;
@@ -228,32 +237,31 @@ bool hospital_leer_archivo(hospital_t* hospital, const char* nombre_archivo){
             return false;
         }
 
+        
+
+        
         cantidad_lineas++;
         free(linea_leida);
         for(size_t i=0; vector_linea[i]; i++) free(vector_linea[i]);
         free(vector_linea);
     }
     fclose(archivo_hospital);
-    
-    hospital->cantidad_entrenador += cantidad_lineas;
-    hospital->cantidad_pokemon += cantidad_pokemon;
-   
 
-
-    for(size_t i = 0; i<cantidad_pokemon; i++){
+    for(size_t i = 0; i<cantidad_pokemon; i++)
         lista_insertar(hospital->pokemones, &aux_pokemon[i]);
-        lista_insertar(hospital->pokemones_alfabetico, &aux_pokemon[i]);
-
-    }
 
     //ordenar_pokemon_alfabetico(aux_pokemon, cantidad_pokemon);
 
-    /*if(lista_vacia(hospital->pokemones_alfabetico)){
-        for(size_t i = 0; i<cantidad_pokemon; i++)
-            lista_insertar(hospital->pokemones_alfabetico, &aux_pokemon[i]);
-    }
-    else insertar_pokemon_ordenado(hospital->pokemones_alfabetico, aux_pokemon, cantidad_pokemon);*/
 
+    for(size_t i = 0; i<cantidad_pokemon; i++)
+        lista_insertar(hospital->pokemones_alfabetico, &aux_pokemon[i]);
+
+    ordenar_lista_pokemon(hospital->pokemones_alfabetico);
+
+    hospital->cantidad_entrenador = lista_tamanio(hospital->entrenadores);
+    hospital->cantidad_pokemon = lista_tamanio(hospital->pokemones);
+   
+    //free(aux_pokemon);
     return true;
 }
 
@@ -271,87 +279,52 @@ size_t hospital_cantidad_entrenadores(hospital_t* hospital){
 size_t hospital_a_cada_pokemon(hospital_t* hospital, bool (*funcion)(pokemon_t* p)){
     if(!hospital || !funcion) return 0;
 
-    lista_iterador_t* iterador = NULL;
-
-    if(!lista_vacia(hospital->pokemones_alfabetico)){
-        iterador = lista_iterador_crear(hospital->pokemones_alfabetico);
-        if(!iterador) return 0;
-    }
-
     size_t cantidad_aplicaciones = 0;
-    //bool seguir_aplicando = true;
+    bool seguir_aplicando = true;
 
-    pokemon_t* pokemon_auxiliar;
-
-    while (lista_iterador_tiene_siguiente(iterador) && (cantidad_aplicaciones < hospital->cantidad_pokemon) ){
-        pokemon_auxiliar = lista_iterador_elemento_actual(iterador);
-        if(!funcion(pokemon_auxiliar)){
-            lista_iterador_destruir(iterador);
-            return cantidad_aplicaciones+1;
-        }
-        cantidad_aplicaciones++;
-        lista_iterador_avanzar(iterador);    
+    while (seguir_aplicando && (cantidad_aplicaciones < hospital->cantidad_pokemon) ){
+        seguir_aplicando = funcion(lista_elemento_en_posicion(hospital->pokemones_alfabetico, cantidad_aplicaciones));
+        cantidad_aplicaciones++;    
     }
-    lista_iterador_destruir(iterador);
     return cantidad_aplicaciones;
 }
 
-bool destructor_pokemones(void* p1, void* p2){
+bool destructor_pokemones_lista(pokemon_t* p1){
 
     if(p1){
-        pokemon_t* p = NULL;
-        p = p1;
-        if(p->nombre) free(p->nombre);
-        if(p->entrenador){
-            entrenador_t* entrenador = p->entrenador;
-            //p->entrenador = NULL;
-            free(entrenador->nombre);
-            free(entrenador);
-        }
-        
-        if(p) free(p);
+        pokemon_t* p = p1;
+        free(p->nombre);
+        free(p);
+        return true;
     }
-    return true;
+    return false;
+}
+
+bool destructor_entrenador(void* e1, void* e2){
+    if(e1){
+
+        entrenador_t* e = e1;
+        free(e->nombre);
+        free(e);
+       
+        return true;
+    }
+    return false;
 }
 
 
 void hospital_destruir(hospital_t* hospital){
-    /*if(hash){
-        elemento_t* dato_aux;
-        for(int i = 0; i<hash->capacidad; i++){
-            while(!lista_vacia(hash->tabla[i])){
-                dato_aux = lista_quitar(hash->tabla[i]);
-                free(dato_aux->clave);
-                if(hash->destructor) hash->destructor(dato_aux->elemento);
-                free(dato_aux);
-            }
-            lista_destruir(hash->tabla[i]);
-        }
-        free(hash->tabla);
-        free(hash);
-    }*/
-
-
     if(!hospital) return;
 
-    /*pokemon_t* p;
-    size_t i = 0;
-    while(!lista_vacia(hospital->pokemones_alfabetico) && i<hospital->cantidad_pokemon){
-        p = lista_quitar(hospital->pokemones_alfabetico );
-        
-        if(p->entrenador){
-            entrenador_t* entrenador = p->entrenador;
-            free(entrenador->nombre);
-            free(p->entrenador);
-        }
-        free(p->nombre);
-        free(p);
-        i++;
-    }*/
-    lista_con_cada_elemento(hospital->pokemones, destructor_pokemones, NULL);
+    lista_con_cada_elemento(hospital->entrenadores, destructor_entrenador, NULL);
+    //lista_con_cada_elemento(hospital->pokemones, destructor_pokemones_lista, NULL);
+
     
     //lista_con_cada_elemento(hospital->pokemones_alfabetico, destructor_pokemones, NULL);
-    //hospital_a_cada_pokemon(hospital, destructor_pokemones);
+
+    hospital_a_cada_pokemon(hospital, destructor_pokemones_lista);
+
+    lista_destruir(hospital->entrenadores);
     lista_destruir(hospital->pokemones);
     lista_destruir(hospital->pokemones_alfabetico);
 

@@ -1,7 +1,8 @@
 #include "pa2mm.h"
 #include "src/hospital.h"
+#include "src/simulador.h"
 
-#include <string.h>
+#include "string.h"
 #include <stdbool.h>
 
 bool ignorar_pokemon(pokemon_t* p){
@@ -44,32 +45,78 @@ bool acumulados_en_orden_correcto(){
     return true;
 }
 
-bool mostrar_pokemon(pokemon_t* p){
-    acumulados.pokemon[acumulados.cantidad] = p;
-    acumulados.cantidad++;
-    size_t i =0;
-    while(acumulados.pokemon[acumulados.cantidad] && i<acumulados.cantidad){
-        printf("%s\n", pokemon_nombre(acumulados.pokemon[i]));
-        i++;
-    }
-
-    return true;
-}
-
 /* Pruebas */
 
-void puedoCrearYDestruirUnHospital(){
-    hospital_t* h=NULL;
+void simular_conHospitalVacio(){
+    hospital_t* h=hospital_crear();
+    simulador_t* s=NULL;
 
-    pa2m_afirmar((h=hospital_crear()), "Crear un hospital devuelve un hospital");
+    pa2m_afirmar((s=simulador_crear(h)), "Puedo crear un simulador con hospital vacio");
 
-    pa2m_afirmar(hospital_cantidad_entrenadores(h)==0, "Un hospital se crea con cero entrenadores");
-    pa2m_afirmar(hospital_cantidad_pokemon(h)==0, "Un hospital se crea con cero pokemon");
+    EstadisticasSimulacion estadisticas;
 
-    pa2m_afirmar(hospital_a_cada_pokemon(h, ignorar_pokemon)==0, "Recorrer los pokemon resulta en 0 pokemon recorridos");
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerEstadisticas, &estadisticas)==ExitoSimulacion, "Simular ObtenerEstadisticas con datos hospital vacio devuelve exito");
+    pa2m_afirmar(estadisticas.cantidad_eventos_simulados==1, "Cantidad de eventos simulados es 1");
+    pa2m_afirmar(estadisticas.entrenadores_atendidos==0, "Cantidad de entrenadores atendidos es 0");
+    pa2m_afirmar(estadisticas.entrenadores_totales==0, "Cantidad de entrenadores totales es 0");
+    pa2m_afirmar(estadisticas.pokemon_atendidos==0, "Cantidad de epokemon atendidos es 0");
+    pa2m_afirmar(estadisticas.pokemon_en_espera==0, "Cantidad de pokemon en espera es 0");
+    pa2m_afirmar(estadisticas.pokemon_totales==0, "Cantidad de pokemon totales es 0");
+    pa2m_afirmar(estadisticas.puntos==0, "Cantidad de puntos es 0");
 
-    hospital_destruir(h);
+    pa2m_afirmar(simulador_simular_evento(s, AtenderProximoEntrenador, NULL)==ErrorSimulacion, "Simular AtenderProximoEntrenador con hospital vacio devuelve error");
+
+    InformacionPokemon* info_poke = calloc(1,sizeof(InformacionPokemon));
+    if(!info_poke){
+        simulador_destruir(s);
+        return;
+    }
+    info_poke->nombre_pokemon = NULL;
+    info_poke->nombre_entrenador = NULL;
+
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerInformacionPokemonEnTratamiento, info_poke)==ErrorSimulacion, "Simular ObtenerInformacionPokemonEnTratamiento con hospital vacio devuelve error");
+
+    InformacionDificultad* info_dif = malloc(sizeof(InformacionDificultad));
+    if(!info_dif){
+        simulador_destruir(s);
+        free(info_poke);
+        return;
+    }
+    info_dif->id = 0;
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerInformacionDificultad, info_dif)==ExitoSimulacion, "Simular ObtenerInformacionDificultad 0 con hospital vacio devuelve exito");
+
+
+    simulador_destruir(s);
+    free(info_poke);
+    free(info_dif);
+
 }
+
+void puedoOperar_conDatoserroneosYNULL(){
+
+    pa2m_afirmar(simulador_crear(NULL)==NULL, "No puedo crear un simulador con hospital NULL");
+    pa2m_afirmar(simulador_simular_evento(NULL, AtenderProximoEntrenador, NULL)==ErrorSimulacion, "Simular con simulador NULL devuelve error");
+
+
+    hospital_t* h=hospital_crear();
+    hospital_leer_archivo(h, "ejemplos/varios_entrenadores.hospital");
+
+    simulador_t* s = simulador_crear(h);
+
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerEstadisticas, NULL)==ErrorSimulacion, "Simular ObtenerEstadisticas con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerInformacionPokemonEnTratamiento, NULL)==ErrorSimulacion, "Simular ObtenerInformacionPokemonEnTratamiento con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, AdivinarNivelPokemon, NULL)==ErrorSimulacion, "Simular AdivinarNivelPokemon con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, AgregarDificultad, NULL)==ErrorSimulacion, "Simular AgregarDificultad con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, SeleccionarDificultad, NULL)==ErrorSimulacion, "Simular SeleccionarDificultad con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, ObtenerInformacionDificultad, NULL)==ErrorSimulacion, "Simular ObtenerInformacionDificultad con datos NULL devuelve error");
+    pa2m_afirmar(simulador_simular_evento(s, FinalizarSimulacion, NULL)==ExitoSimulacion, "Simular FinalizarSimulacion con datos NULL devuelve exito");
+    pa2m_afirmar(simulador_simular_evento(s, AtenderProximoEntrenador, NULL)==ErrorSimulacion, "Simular AtenderProximoEntrenador despues de FinalizarSimulacion con datos NULL devuelve error");
+
+    simulador_destruir(s);
+    
+}
+
+
 
 void dadoUnHospitalNULL_lasPuedoAplicarLasOperacionesDelHospitalSinProblema(){
     hospital_t* h=NULL;
@@ -121,15 +168,7 @@ void dadoUnArchivoConVariosEntrenadores_SeAgreganLosEntrenadoresYSusPokemonAlHos
     resetear_acumulados();
     pa2m_afirmar(hospital_a_cada_pokemon(h, acumular_pokemon)==24, "Recorrer los pokemon resulta en 24 pokemon recorridos");
     pa2m_afirmar(acumulados_en_orden_correcto(), "Los pokemon se recorrieron en orden alfabetico");
-    resetear_acumulados();
-    pa2m_afirmar(hospital_a_cada_pokemon(h, acumular_pokemon_hasta_miltank)==14, "Recorrer los pokemon hasta milktank son 14 pokemon recorridos");
-    resetear_acumulados();
-    pa2m_afirmar(hospital_a_cada_pokemon(h, acumular_pokemon_hasta_miltank)==13, "Recorrer los pokemon hasta milktank son 13 pokemon recorridos");
-    resetear_acumulados();
-    pa2m_afirmar(hospital_a_cada_pokemon(h, acumular_pokemon_hasta_miltank)==15, "Recorrer los pokemon hasta milktank son 15 pokemon recorridos");
-    resetear_acumulados();
-    pa2m_afirmar(hospital_a_cada_pokemon(h, mostrar_pokemon)==24, "Muestra pokemon recorridos");
-    
+
     hospital_destruir(h);
 }
 
@@ -153,23 +192,23 @@ void dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital(){
 
 int main(){
 
-    pa2m_nuevo_grupo("Pruebas de  creación y destrucción");
-    puedoCrearYDestruirUnHospital();
+    pa2m_nuevo_grupo("Pruebas con datos erróneos y NULLs");
+    puedoOperar_conDatoserroneosYNULL();
 
-    pa2m_nuevo_grupo("Pruebas con NULL");
-    dadoUnHospitalNULL_lasPuedoAplicarLasOperacionesDelHospitalSinProblema();
+    pa2m_nuevo_grupo("Pruebas con hospital vacio");
+    simular_conHospitalVacio();
 
     pa2m_nuevo_grupo("Pruebas con un archivo vacío");
-    dadoUnArchivoVacio_NoSeAgreganPokemonAlHospital();
+    //dadoUnArchivoVacio_NoSeAgreganPokemonAlHospital();
 
     pa2m_nuevo_grupo("Pruebas con un archivo de un entrenador");
-    dadoUnArchivoConUnEntrenador_SeAgregaElEntrenadorYSusPokemonAlHospital();
+    //dadoUnArchivoConUnEntrenador_SeAgregaElEntrenadorYSusPokemonAlHospital();
 
     pa2m_nuevo_grupo("Pruebas con un archivo de varios entrenadores");
-    dadoUnArchivoConVariosEntrenadores_SeAgreganLosEntrenadoresYSusPokemonAlHospital();
+    //dadoUnArchivoConVariosEntrenadores_SeAgreganLosEntrenadoresYSusPokemonAlHospital();
 
     pa2m_nuevo_grupo("Pruebas con mas de un archivo");
-    dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital();
+    //dadosVariosArchivos_puedoAgregarlosTodosAlMismoHospital();
 
     return pa2m_mostrar_reporte();
 }

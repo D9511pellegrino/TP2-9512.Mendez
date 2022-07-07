@@ -14,5 +14,11 @@ valgrind-pruebas: pruebas
 pruebas: pruebas.c src/*.c src/*.h
 	gcc $(CFLAGS) -o pruebas pruebas.c src/*.c 2>&1
 
+valgrind-pruebas-custom: pruebas_custom
+	valgrind $(VFLAGS) ./pruebas_custom 2>&1
+
+pruebas_custom: pruebas_custom.c src/*.c src/*.h
+	gcc $(CFLAGS) -o pruebas_custom pruebas_custom.c src/*.c 2>&1
+
 clean:
 	rm pruebas 2>&1

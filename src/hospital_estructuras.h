@@ -9,12 +9,13 @@ struct _hospital_pkm_t {
     size_t cantidad_pokemon;
     lista_t* pokemones;
     lista_t* pokemones_alfabetico;
+    lista_t* entrenadores;
 };
 
 struct _pkm_t {
+    size_t nivel;
     char* nombre;
     entrenador_t* entrenador;
-    size_t nivel;
 };
 
 struct _entrenador_t {
